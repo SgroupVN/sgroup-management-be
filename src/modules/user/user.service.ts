@@ -35,9 +35,7 @@ export class UserService {
    */
   findOne(findData: FindOptionsWhere<UserEntity>): Promise<UserEntity | null> {
     return this.userRepository.findOne({
-      where: {
-        id: findData.id,
-      },
+      where: findData,
       relations: {
         role: {
           permissions: true,

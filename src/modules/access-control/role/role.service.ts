@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { PageDto } from '@src/common/dto/page.dto';
+import { RoleNotFoundException } from '@src/exceptions/role-not-found.exception';
 import type { FindOneOptions } from 'typeorm';
 import { Repository } from 'typeorm';
 
@@ -51,5 +52,59 @@ export class RoleService {
       .set({ isDeleted: true })
       .where('id = :roleId', { roleId })
       .execute();
+  }
+
+  async attachPermissions({
+    roleId,
+    permissionIds,
+  }: {
+    roleId: string;
+    permissionIds: string[];
+  }) {
+    const role = await this.roleRepository.findOne({
+      where: {
+        id: roleId,
+      },
+      relations: {
+        permissions: true,
+      },
+    } as FindOneOptions<RoleEntity>);
+
+    if (!role) {
+      throw new RoleNotFoundException();
+    }
+
+    return this.roleRepository
+      .createQueryBuilder()
+      .relation(RoleEntity, 'permissions')
+      .of(role)
+      .add(permissionIds);
+  }
+
+  async revokePermissions({
+    roleId,
+    permissionIds,
+  }: {
+    roleId: string;
+    permissionIds: string[];
+  }) {
+    const role = await this.roleRepository.findOne({
+      where: {
+        id: roleId,
+      },
+      relations: {
+        permissions: true,
+      },
+    } as FindOneOptions<RoleEntity>);
+
+    if (!role) {
+      throw new RoleNotFoundException();
+    }
+
+    return this.roleRepository
+      .createQueryBuilder()
+      .relation(RoleEntity, 'permissions')
+      .of(role)
+      .remove(permissionIds);
   }
 }
