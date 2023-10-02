@@ -7,8 +7,8 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Permission } from '@src/constants/permission';
 
+// import { Permission } from '@src/constants/permission';
 import { PageDto } from '../../common/dto/page.dto';
 import { ApiPageOkResponse, Auth, UUIDParam } from '../../decorators';
 import { UserDto } from './dtos/user.dto';
@@ -22,7 +22,7 @@ export class UserController {
 
   @Get()
   @Auth({
-    permissions: [Permission.CanGetListPermissions, Permission.CanGetListUsers],
+    permissions: [],
   })
   @HttpCode(HttpStatus.OK)
   @ApiPageOkResponse({
