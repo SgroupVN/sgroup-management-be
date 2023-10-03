@@ -10,16 +10,16 @@ import { RoleDto } from './dtos/role.dto';
 @Entity({ name: 'roles' })
 @UseDto(RoleDto)
 export class RoleEntity extends AbstractEntity<RoleDto, RoleDtoOptions> {
-  @Column({ nullable: false, unique: true })
-  name?: string;
+    @Column({ nullable: false, unique: true })
+    name?: string;
 
-  @Column({ nullable: false, default: false })
-  isDeleted: boolean;
+    @Column({ nullable: false, default: false })
+    isDeleted: boolean;
 
-  @ManyToMany(() => PermissionEntity)
-  @JoinTable()
-  permissions: PermissionEntity[];
+    @ManyToMany(() => PermissionEntity)
+    @JoinTable()
+    permissions: PermissionEntity[];
 
-  @OneToMany(() => UserEntity, (user) => user.role)
-  user: UserEntity;
+    @OneToMany(() => UserEntity, (user) => user.role)
+    user: UserEntity;
 }

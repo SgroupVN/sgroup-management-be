@@ -10,33 +10,33 @@ import { UserService } from '../../user/user.service';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
-  Strategy,
-  'refresh-token',
+    Strategy,
+    'refresh-token',
 ) {
-  constructor(
-    private configService: ApiConfigService,
-    private userService: UserService,
-  ) {
-    super({
-      jwtFromRequest: ExtractJwt.fromHeader('x-refresh-token'),
-      secretOrKey: configService.authConfig.refreshTokenPrivateKey,
-    });
-  }
-
-  async validate(payload: JwtPayload): Promise<UserEntity> {
-    if (payload.type !== TokenType.REFRESH_TOKEN) {
-      throw new UnauthorizedException();
+    constructor(
+        private configService: ApiConfigService,
+        private userService: UserService,
+    ) {
+        super({
+            jwtFromRequest: ExtractJwt.fromHeader('x-refresh-token'),
+            secretOrKey: configService.authConfig.refreshTokenPrivateKey,
+        });
     }
 
-    const user = await this.userService.findOne({
-      id: payload.userId as never,
-      role: payload.role,
-    });
+    async validate(payload: JwtPayload): Promise<UserEntity> {
+        if (payload.type !== TokenType.REFRESH_TOKEN) {
+            throw new UnauthorizedException();
+        }
 
-    if (!user) {
-      throw new UnauthorizedException();
+        const user = await this.userService.findOne({
+            id: payload.userId as never,
+            role: payload.role,
+        });
+
+        if (!user) {
+            throw new UnauthorizedException();
+        }
+
+        return user;
     }
-
-    return user;
-  }
 }

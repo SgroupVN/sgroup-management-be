@@ -1,12 +1,16 @@
 import {
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Query,
-  ValidationPipe,
+    Body,
+    Get,
+    Post,
+    Patch,
+    Controller,
+    Param,
+    HttpCode,
+    HttpStatus,
+    Query,
+    ValidationPipe,
 } from '@nestjs/common';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 // import { Permission } from '@src/constants/permission';
 import { PageDto } from '../../common/dto/page.dto';
@@ -14,37 +18,63 @@ import { ApiPageOkResponse, Auth, UUIDParam } from '../../decorators';
 import { UserDto } from './dtos/user.dto';
 import { UsersPageOptionsDto } from './dtos/users-page-options.dto';
 import { UserService } from './user.service';
+import { CreateUserDto } from './dtos/create-user.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
 
 @Controller('users')
 @ApiTags('users')
 export class UserController {
-  constructor(private userService: UserService) {}
+    constructor(private userService: UserService) {}
 
-  @Get()
-  @Auth({
-    permissions: [],
-  })
-  @HttpCode(HttpStatus.OK)
-  @ApiPageOkResponse({
-    description: 'Get users list',
-    type: PageDto,
-  })
-  getUsers(
-    @Query(new ValidationPipe({ transform: true }))
-    pageOptionsDto: UsersPageOptionsDto,
-  ): Promise<PageDto<UserDto>> {
-    return this.userService.getUsers(pageOptionsDto);
-  }
+    @Get(':id')
+    //   @Auth([RoleType.USER])
+    @HttpCode(HttpStatus.OK)
+    @ApiResponse({
+        status: HttpStatus.OK,
+        description: 'Get user',
+        type: UserDto,
+    })
+    getUser(@UUIDParam('id') userId: Uuid): Promise<UserDto> {
+        return this.userService.getUser(userId);
+    }
 
-  @Get(':id')
-  //   @Auth([RoleType.USER])
-  @HttpCode(HttpStatus.OK)
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Get users list',
-    type: UserDto,
-  })
-  getUser(@UUIDParam('id') userId: Uuid): Promise<UserDto> {
-    return this.userService.getUser(userId);
-  }
+    @Get()
+    @Auth({ permissions: [] })
+    @HttpCode(HttpStatus.OK)
+    @ApiPageOkResponse({
+        description: 'Get list users',
+        type: PageDto,
+    })
+    getUsers(
+        @Query(new ValidationPipe({ transform: true }))
+        pageOptionsDto: UsersPageOptionsDto,
+    ): Promise<PageDto<UserDto>> {
+        return this.userService.getUsers(pageOptionsDto);
+    }
+
+    @Post()
+    @ApiBody({ type: [CreateUserDto] })
+    @ApiPageOkResponse({
+        description: 'Create member',
+        type: UserDto,
+    })
+    createUser(@Body() createUsersDto: CreateUserDto[]): Promise<any> {
+        return this.userService.createUsers(createUsersDto);
+    }
+
+    @Patch(':userId')
+    @ApiParam({ name: 'userId', required: true, type: String })
+    @ApiPageOkResponse({
+        description: 'Update member',
+        type: UserDto,
+    })
+    updateUser(
+        @Param('userId') userId: Uuid,
+        @Body() updateUserDto: UpdateUserDto,
+    ): Promise<UserDto> {
+        return this.userService.updateUser({
+            userId,
+            updateUserDto,
+        });
+    }
 }

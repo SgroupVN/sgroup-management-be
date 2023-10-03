@@ -17,35 +17,35 @@ import { ApiConfigService } from './shared/services/api-config.service';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
-  imports: [
-    AuthModule,
-    UserModule,
-    RoleModule,
-    PermissionModule,
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: '.env',
-    }),
-    TypeOrmModule.forRootAsync({
-      imports: [SharedModule],
-      useFactory: (configService: ApiConfigService) =>
-        configService.postgresConfig,
-      inject: [ApiConfigService],
-      dataSourceFactory: async (options) => {
-        if (!options) {
-          throw new Error('Invalid options passed');
-        }
+    imports: [
+        AuthModule,
+        UserModule,
+        RoleModule,
+        PermissionModule,
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: '.env',
+        }),
+        TypeOrmModule.forRootAsync({
+            imports: [SharedModule],
+            useFactory: (configService: ApiConfigService) =>
+                configService.postgresConfig,
+            inject: [ApiConfigService],
+            dataSourceFactory: async (options) => {
+                if (!options) {
+                    throw new Error('Invalid options passed');
+                }
 
-        return addTransactionalDataSource(new DataSource(options));
-      },
-    }),
-    HealthCheckerModule,
-  ],
-  providers: [
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: HttpResponseTransformInterceptor,
-    },
-  ],
+                return addTransactionalDataSource(new DataSource(options));
+            },
+        }),
+        HealthCheckerModule,
+    ],
+    providers: [
+        {
+            provide: APP_INTERCEPTOR,
+            useClass: HttpResponseTransformInterceptor,
+        },
+    ],
 })
 export class AppModule {}

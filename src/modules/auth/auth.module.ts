@@ -11,31 +11,31 @@ import { PublicStrategy } from './strategies/public.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 
 @Module({
-  imports: [
-    UserModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.registerAsync({
-      useFactory: (configService: ApiConfigService) => ({
-        privateKey: configService.authConfig.accessTokenPrivateKey,
-        publicKey: configService.authConfig.accessTokenPublicKey,
-        signOptions: {
-          algorithm: 'RS256',
-          expiresIn: '1d',
-        },
-        verifyOptions: {
-          algorithms: ['RS256'],
-        },
-      }),
-      inject: [ApiConfigService],
-    }),
-  ],
-  controllers: [AuthController],
-  providers: [
-    AuthService,
-    RefreshTokenStrategy,
-    AccessTokenStrategy,
-    PublicStrategy,
-  ],
-  exports: [JwtModule, AuthService],
+    imports: [
+        UserModule,
+        PassportModule.register({ defaultStrategy: 'jwt' }),
+        JwtModule.registerAsync({
+            useFactory: (configService: ApiConfigService) => ({
+                privateKey: configService.authConfig.accessTokenPrivateKey,
+                publicKey: configService.authConfig.accessTokenPublicKey,
+                signOptions: {
+                    algorithm: 'RS256',
+                    expiresIn: '1d',
+                },
+                verifyOptions: {
+                    algorithms: ['RS256'],
+                },
+            }),
+            inject: [ApiConfigService],
+        }),
+    ],
+    controllers: [AuthController],
+    providers: [
+        AuthService,
+        RefreshTokenStrategy,
+        AccessTokenStrategy,
+        PublicStrategy,
+    ],
+    exports: [JwtModule, AuthService],
 })
 export class AuthModule {}

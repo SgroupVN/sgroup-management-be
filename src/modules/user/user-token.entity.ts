@@ -9,19 +9,19 @@ import { UserEntity } from './user.entity';
 @Entity({ name: 'user_tokens' })
 @UseDto(UserDto)
 export class UserTokenEntity extends AbstractEntity<UserDto, UserDtoOptions> {
-  @Column({ type: String })
-  refreshToken?: string;
+    @Column({ type: String })
+    refreshToken?: string;
 
-  @Column({ type: 'uuid' })
-  userId?: string;
+    @Column({ type: 'uuid' })
+    userId?: string;
 
-  @Column({ type: Boolean, default: false })
-  revoked?: boolean;
+    @Column({ type: Boolean, default: false })
+    revoked?: boolean;
 
-  @OneToMany(() => UserEntity, (user) => user.tokens, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  @JoinColumn({ name: 'user_id' })
-  user?: UserEntity;
+    @OneToMany(() => UserEntity, (user) => user.tokens, {
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+    })
+    @JoinColumn({ name: 'user_id' })
+    user?: UserEntity;
 }

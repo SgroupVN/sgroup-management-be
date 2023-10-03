@@ -1,11 +1,11 @@
 import type { PipeTransform } from '@nestjs/common';
 import {
-  applyDecorators,
-  Param,
-  ParseUUIDPipe,
-  SetMetadata,
-  UseGuards,
-  UseInterceptors,
+    applyDecorators,
+    Param,
+    ParseUUIDPipe,
+    SetMetadata,
+    UseGuards,
+    UseInterceptors,
 } from '@nestjs/common';
 import type { Type } from '@nestjs/common/interfaces';
 import { ApiBearerAuth, ApiUnauthorizedResponse } from '@nestjs/swagger';
@@ -18,27 +18,27 @@ import { AuthUserInterceptor } from '../interceptors/auth-user-interceptor.servi
 import { PublicRoute } from './public-route.decorator';
 
 export function Auth({
-  options = { public: false },
-  permissions = [],
+    options = { public: false },
+    permissions = [],
 }: {
-  options?: Partial<{ public: boolean }>;
-  permissions?: Permission[];
+    options?: Partial<{ public: boolean }>;
+    permissions?: Permission[];
 }): MethodDecorator {
-  const isPublicRoute = options.public;
+    const isPublicRoute = options.public;
 
-  return applyDecorators(
-    SetMetadata(REQUIRED_PERMISSIONS, permissions),
-    UseGuards(AuthGuard({ public: isPublicRoute }), PermissionGuard),
-    ApiBearerAuth(),
-    UseInterceptors(AuthUserInterceptor),
-    ApiUnauthorizedResponse({ description: 'Unauthorized' }),
-    PublicRoute(isPublicRoute),
-  );
+    return applyDecorators(
+        SetMetadata(REQUIRED_PERMISSIONS, permissions),
+        UseGuards(AuthGuard({ public: isPublicRoute }), PermissionGuard),
+        ApiBearerAuth(),
+        UseInterceptors(AuthUserInterceptor),
+        ApiUnauthorizedResponse({ description: 'Unauthorized' }),
+        PublicRoute(isPublicRoute),
+    );
 }
 
 export function UUIDParam(
-  property: string,
-  ...pipes: Array<Type<PipeTransform> | PipeTransform>
+    property: string,
+    ...pipes: Array<Type<PipeTransform> | PipeTransform>
 ): ParameterDecorator {
-  return Param(property, new ParseUUIDPipe({ version: '4' }), ...pipes);
+    return Param(property, new ParseUUIDPipe({ version: '4' }), ...pipes);
 }

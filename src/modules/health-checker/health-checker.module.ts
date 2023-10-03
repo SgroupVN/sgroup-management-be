@@ -5,8 +5,8 @@ import { HealthCheckerController } from './health-checker.controller';
 import { ServiceHealthIndicator } from './health-indicators/service.indicator';
 
 @Module({
-  imports: [TerminusModule],
-  controllers: [HealthCheckerController],
-  providers: [ServiceHealthIndicator],
+    imports: [TerminusModule],
+    controllers: [HealthCheckerController],
+    providers: [ServiceHealthIndicator],
 })
 export class HealthCheckerModule {}
