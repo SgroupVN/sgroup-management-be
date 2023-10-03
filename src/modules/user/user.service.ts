@@ -18,151 +18,229 @@ import type { UsersPageOptionsDto } from './dtos/users-page-options.dto';
 import { UserEntity } from './user.entity';
 import type { UserSettingsEntity } from './user-settings.entity';
 import { UserTokenEntity } from './user-token.entity';
+import { CreateUserDto } from './dtos/create-user.dto';
+import { ConfigService } from '@src/configs/config.service';
+import { UpdateUserDto } from './dtos/update-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(
-    @InjectRepository(UserEntity)
-    private userRepository: Repository<UserEntity>,
-    @InjectRepository(UserTokenEntity)
-    private userTokenRepository: Repository<UserTokenEntity>,
-    private validatorService: ValidatorService,
-    private commandBus: CommandBus,
-  ) {}
+    constructor(
+        @InjectRepository(UserEntity)
+        private userRepository: Repository<UserEntity>,
+        @InjectRepository(UserTokenEntity)
+        private userTokenRepository: Repository<UserTokenEntity>,
+        private validatorService: ValidatorService,
+        private commandBus: CommandBus,
+        private configService: ConfigService,
+    ) {}
 
-  /**
-   * Find single user
-   */
-  findOne(findData: FindOptionsWhere<UserEntity>): Promise<UserEntity | null> {
-    return this.userRepository.findOne({
-      where: findData,
-      relations: {
-        role: {
-          permissions: true,
-        },
-      },
-    });
-  }
-
-  async findByUsernameOrEmail(
-    options: Partial<{ username: string; email: string }>,
-  ): Promise<UserEntity | null> {
-    const queryBuilder = this.userRepository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect<UserEntity, 'user'>('user.settings', 'settings');
-
-    if (options.email) {
-      queryBuilder.orWhere('user.email = :email', {
-        email: options.email,
-      });
+    /**
+     * Find single user
+     */
+    findOne(
+        findData: FindOptionsWhere<UserEntity>,
+    ): Promise<UserEntity | null> {
+        return this.userRepository.findOne({
+            where: findData,
+            relations: {
+                settings: true,
+                role: {
+                    permissions: true,
+                },
+            },
+        });
     }
 
-    if (options.username) {
-      queryBuilder.orWhere('user.username = :username', {
-        username: options.username,
-      });
+    async findByUsernameOrEmail(
+        options: Partial<{ username: string; email: string }>,
+    ): Promise<UserEntity | null> {
+        const queryBuilder = this.userRepository
+            .createQueryBuilder('users')
+            .leftJoinAndSelect<UserEntity, 'user'>('user.settings', 'settings');
+
+        if (options.email) {
+            queryBuilder.orWhere('user.email = :email', {
+                email: options.email,
+            });
+        }
+
+        if (options.username) {
+            queryBuilder.orWhere('user.username = :username', {
+                username: options.username,
+            });
+        }
+
+        return queryBuilder.getOne();
     }
 
-    return queryBuilder.getOne();
-  }
+    @Transactional()
+    async registerUser(
+        userRegisterDto: UserRegisterDto,
+        file?: IFile,
+    ): Promise<UserEntity> {
+        const user = this.userRepository.create(userRegisterDto);
 
-  @Transactional()
-  async createUser(
-    userRegisterDto: UserRegisterDto,
-    file?: IFile,
-  ): Promise<UserEntity> {
-    const user = this.userRepository.create(userRegisterDto);
+        if (file && !this.validatorService.isImage(file.mimetype)) {
+            throw new FileNotImageException();
+        }
 
-    if (file && !this.validatorService.isImage(file.mimetype)) {
-      throw new FileNotImageException();
+        // Handle upload file here
+
+        await this.userRepository.save(user);
+
+        user.settings = await this.createSettings(
+            user.id,
+            plainToClass(CreateSettingsDto, {
+                isEmailVerified: true,
+                isPhoneVerified: false,
+                isDefaultPasswordChanged: true,
+            }),
+        );
+
+        return user;
     }
 
-    // Handle upload file here
+    @Transactional()
+    async createUser(createUserDto: CreateUserDto): Promise<UserDto> {
+        const defaultPassword = this.configService.memberDefaultPassword;
+        const user = this.userRepository.create({
+            password: defaultPassword,
+            ...createUserDto,
+        });
 
-    await this.userRepository.save(user);
+        await this.userRepository.save(user);
 
-    user.settings = await this.createSettings(
-      user.id,
-      plainToClass(CreateSettingsDto, {
-        isEmailVerified: false,
-        isPhoneVerified: false,
-      }),
-    );
+        user.settings = await this.createSettings(
+            user.id,
+            plainToClass(CreateSettingsDto, {
+                isEmailVerified: false,
+                isPhoneVerified: false,
+                isDefaultPasswordChanged: false,
+            }),
+        );
 
-    return user;
-  }
-
-  async getUsers(
-    pageOptionsDto: UsersPageOptionsDto,
-  ): Promise<PageDto<UserDto>> {
-    const queryBuilder = this.userRepository.createQueryBuilder('user');
-    const [items, pageMetaDto] = await queryBuilder.paginate(pageOptionsDto);
-
-    return items.toPageDto(pageMetaDto);
-  }
-
-  async getUser(userId: Uuid): Promise<UserDto> {
-    const queryBuilder = this.userRepository.createQueryBuilder('user');
-
-    queryBuilder.where('user.id = :userId', { userId });
-
-    const userEntity = await queryBuilder.getOne();
-
-    if (!userEntity) {
-      throw new UserNotFoundException();
+        return user.toDto();
     }
 
-    return userEntity.toDto();
-  }
+    @Transactional()
+    async createUsers(createUsersDto: CreateUserDto[]): Promise<any> {
+        const defaultPassword = this.configService.memberDefaultPassword;
+        const users = this.userRepository.create(
+            createUsersDto.map((user) => {
+                return {
+                    password: defaultPassword,
+                    ...user,
+                };
+            }),
+        );
 
-  async createSettings(
-    userId: Uuid,
-    createSettingsDto: CreateSettingsDto,
-  ): Promise<UserSettingsEntity> {
-    return this.commandBus.execute<CreateSettingsCommand, UserSettingsEntity>(
-      new CreateSettingsCommand(userId, createSettingsDto),
-    );
-  }
+        await this.userRepository.save(users);
 
-  async storeUserToken({
-    userId,
-    refreshToken,
-  }: {
-    userId: Uuid;
-    refreshToken: string;
-  }) {
-    return this.userTokenRepository
-      .createQueryBuilder()
-      .insert()
-      .values({
+        await Promise.all(
+            users.map((user) => {
+                return this.createSettings(
+                    user.id,
+                    plainToClass(CreateSettingsDto, {
+                        isEmailVerified: false,
+                        isPhoneVerified: false,
+                    }),
+                );
+            }),
+        );
+
+        return {};
+    }
+
+    async updateUser({
+        userId,
+        updateUserDto,
+    }: {
+        userId: Uuid;
+        updateUserDto: UpdateUserDto;
+    }): Promise<UserDto> {
+        const queryBuilder = this.userRepository
+            .createQueryBuilder()
+            .update()
+            .set(updateUserDto);
+
+        await queryBuilder.where('id = :userId', { userId }).execute();
+
+        return this.getUser(userId);
+    }
+
+    async getUsers(
+        pageOptionsDto: UsersPageOptionsDto,
+    ): Promise<PageDto<UserDto>> {
+        const queryBuilder = this.userRepository.createQueryBuilder('user');
+        const [items, pageMetaDto] =
+            await queryBuilder.paginate(pageOptionsDto);
+
+        return items.toPageDto(pageMetaDto);
+    }
+
+    async getUser(userId: Uuid): Promise<UserDto> {
+        const queryBuilder = this.userRepository.createQueryBuilder();
+
+        queryBuilder.where('id = :userId', { userId });
+
+        const userEntity = await queryBuilder.getOne();
+
+        if (!userEntity) {
+            throw new UserNotFoundException();
+        }
+
+        return userEntity.toDto();
+    }
+
+    async createSettings(
+        userId: Uuid,
+        createSettingsDto: CreateSettingsDto,
+    ): Promise<UserSettingsEntity> {
+        return this.commandBus.execute<
+            CreateSettingsCommand,
+            UserSettingsEntity
+        >(new CreateSettingsCommand(userId, createSettingsDto));
+    }
+
+    async storeUserToken({
         userId,
         refreshToken,
-      })
-      .execute();
-  }
+    }: {
+        userId: Uuid;
+        refreshToken: string;
+    }) {
+        return this.userTokenRepository
+            .createQueryBuilder()
+            .insert()
+            .values({
+                userId,
+                refreshToken,
+            })
+            .execute();
+    }
 
-  async revokeUserTokens(userId: Uuid) {
-    await this.userTokenRepository
-      .createQueryBuilder()
-      .update()
-      .set({
-        revoked: true,
-      })
-      .where('user_id = :userId', { userId })
-      .execute();
-  }
+    async revokeUserTokens(userId: Uuid) {
+        await this.userTokenRepository
+            .createQueryBuilder()
+            .update()
+            .set({
+                revoked: true,
+            })
+            .where('user_id = :userId', { userId })
+            .execute();
+    }
 
-  async getUserToken({
-    userId,
-    refreshToken,
-  }: {
-    userId: Uuid;
-    refreshToken: string;
-  }): Promise<UserTokenEntity | null> {
-    return this.userTokenRepository
-      .createQueryBuilder()
-      .where('user_id = :userId', { userId })
-      .andWhere('refresh_token = :refreshToken', { refreshToken })
-      .getOne();
-  }
+    async getUserToken({
+        userId,
+        refreshToken,
+    }: {
+        userId: Uuid;
+        refreshToken: string;
+    }): Promise<UserTokenEntity | null> {
+        return this.userTokenRepository
+            .createQueryBuilder()
+            .where('user_id = :userId', { userId })
+            .andWhere('refresh_token = :refreshToken', { refreshToken })
+            .getOne();
+    }
 }

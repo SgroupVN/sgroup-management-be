@@ -7,38 +7,40 @@ import { timeout } from 'rxjs/operators';
 
 @Injectable()
 export class ServiceHealthIndicator extends HealthIndicator {
-  constructor(
-    @Optional()
-    @Inject('NATS_SERVICE')
-    private readonly clientProxy?: ClientProxy,
-  ) {
-    super();
-  }
-
-  async isHealthy(eventName: string): Promise<HealthIndicatorResult> {
-    try {
-      if (!this.clientProxy) {
-        return {
-          [eventName]: {
-            status: 'down',
-          },
-        };
-      }
-
-      const result = await firstValueFrom(
-        this.clientProxy.send(eventName, { check: true }).pipe(timeout(10_000)),
-        {
-          defaultValue: undefined,
-        },
-      );
-
-      return {
-        [eventName]: result,
-      };
-    } catch (error) {
-      throw new HealthCheckError(`${eventName} failed`, {
-        [eventName]: error,
-      });
+    constructor(
+        @Optional()
+        @Inject('NATS_SERVICE')
+        private readonly clientProxy?: ClientProxy,
+    ) {
+        super();
     }
-  }
+
+    async isHealthy(eventName: string): Promise<HealthIndicatorResult> {
+        try {
+            if (!this.clientProxy) {
+                return {
+                    [eventName]: {
+                        status: 'down',
+                    },
+                };
+            }
+
+            const result = await firstValueFrom(
+                this.clientProxy
+                    .send(eventName, { check: true })
+                    .pipe(timeout(10_000)),
+                {
+                    defaultValue: undefined,
+                },
+            );
+
+            return {
+                [eventName]: result,
+            };
+        } catch (error) {
+            throw new HealthCheckError(`${eventName} failed`, {
+                [eventName]: error,
+            });
+        }
+    }
 }

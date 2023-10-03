@@ -4,9 +4,9 @@
  */
 
 export enum Permission {
-  CanGetListUsers = 'CAN_GET_USERS',
-  CanGetListRoles = 'CAN_GET_ROLES',
-  CanGetListPermissions = 'CAN_GET_PERMISSIONS',
+    CanGetListUsers = 'CAN_GET_USERS',
+    CanGetListRoles = 'CAN_GET_ROLES',
+    CanGetListPermissions = 'CAN_GET_PERMISSIONS',
 }
 
 export const REQUIRED_PERMISSIONS = Symbol('REQUIRED_PERMISSIONS');

@@ -7,15 +7,15 @@ import { PermissionDto } from './dtos/permission.dto';
 @Entity({ name: 'permissions' })
 @UseDto(PermissionDto)
 export class PermissionEntity extends AbstractEntity<PermissionDto> {
-  @Column({ nullable: false, unique: true })
-  name: string;
+    @Column({ nullable: false, unique: true })
+    name: string;
 
-  @Column({ nullable: true, type: String })
-  description: string;
+    @Column({ nullable: true, type: String })
+    description: string;
 
-  @Column({ nullable: true, type: String })
-  domain?: string;
+    @Column({ nullable: true, type: String })
+    domain?: string;
 
-  @Column({ nullable: false, default: false })
-  isDeleted: boolean;
+    @Column({ nullable: false, default: false })
+    isDeleted: boolean;
 }

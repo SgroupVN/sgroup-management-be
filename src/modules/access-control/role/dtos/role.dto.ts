@@ -8,18 +8,18 @@ import type { RoleEntity } from '../role.entity';
 export type RoleDtoOptions = Partial<{ isActive: boolean }>;
 
 export class RoleDto extends AbstractDto {
-  @ApiPropertyOptional()
-  name?: string;
+    @ApiPropertyOptional()
+    name?: string;
 
-  @ApiPropertyOptional()
-  isDeleted?: boolean;
+    @ApiPropertyOptional()
+    isDeleted?: boolean;
 
-  permissions: PermissionDto[];
+    permissions: PermissionDto[];
 
-  constructor(role: RoleEntity) {
-    super(role);
-    this.name = role.name;
-    this.permissions = role.permissions;
-    this.isDeleted = role.isDeleted;
-  }
+    constructor(role: RoleEntity) {
+        super(role);
+        this.name = role.name;
+        this.permissions = role.permissions;
+        this.isDeleted = role.isDeleted;
+    }
 }

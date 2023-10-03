@@ -10,62 +10,63 @@ import { PermissionEntity } from './permission.entity';
 
 @Injectable()
 export class PermissionService {
-  constructor(
-    @InjectRepository(PermissionEntity)
-    private readonly permissionRepository: Repository<PermissionEntity>,
-  ) {}
+    constructor(
+        @InjectRepository(PermissionEntity)
+        private readonly permissionRepository: Repository<PermissionEntity>,
+    ) {}
 
-  createPermission(createPermissionDto: CreatePermissionDto) {
-    return this.permissionRepository.save(createPermissionDto);
-  }
-
-  async getPermissions(
-    queryCriterias: GetPermissionDto,
-  ): Promise<PageDto<PermissionDto>> {
-    const queryBuilder = this.permissionRepository.createQueryBuilder();
-
-    queryBuilder.where('is_deleted = :isDeleted', { isDeleted: false });
-
-    if (queryCriterias.name) {
-      queryBuilder.andWhere('name LIKE :name', {
-        name: `%${queryCriterias.name}%`,
-      });
+    createPermission(createPermissionDto: CreatePermissionDto) {
+        return this.permissionRepository.save(createPermissionDto);
     }
 
-    if (queryCriterias.domain) {
-      queryBuilder.andWhere('domain = :domain', {
-        domain: queryCriterias.domain,
-      });
+    async getPermissions(
+        queryCriterias: GetPermissionDto,
+    ): Promise<PageDto<PermissionDto>> {
+        const queryBuilder = this.permissionRepository.createQueryBuilder();
+
+        queryBuilder.where('is_deleted = :isDeleted', { isDeleted: false });
+
+        if (queryCriterias.name) {
+            queryBuilder.andWhere('name LIKE :name', {
+                name: `%${queryCriterias.name}%`,
+            });
+        }
+
+        if (queryCriterias.domain) {
+            queryBuilder.andWhere('domain = :domain', {
+                domain: queryCriterias.domain,
+            });
+        }
+
+        const [items, pageMetaDto] =
+            await queryBuilder.paginate(queryCriterias);
+
+        return items.toPageDto(pageMetaDto);
     }
 
-    const [items, pageMetaDto] = await queryBuilder.paginate(queryCriterias);
+    deletePermission(permissionId: string) {
+        return this.permissionRepository
+            .createQueryBuilder()
+            .update()
+            .set({ isDeleted: true })
+            .where('id = :permissionId', { permissionId })
+            .execute();
+    }
 
-    return items.toPageDto(pageMetaDto);
-  }
+    updatePermission(
+        permissionId: string,
+        updatePermissionDto: Partial<CreatePermissionDto>,
+    ) {
+        const query = this.permissionRepository
+            .createQueryBuilder()
+            .update()
+            .set({
+                name: updatePermissionDto.name,
+                domain: updatePermissionDto.domain,
+                description: updatePermissionDto.description,
+            })
+            .where('id := permissionId', { permissionId });
 
-  deletePermission(permissionId: string) {
-    return this.permissionRepository
-      .createQueryBuilder()
-      .update()
-      .set({ isDeleted: true })
-      .where('id = :permissionId', { permissionId })
-      .execute();
-  }
-
-  updatePermission(
-    permissionId: string,
-    updatePermissionDto: Partial<CreatePermissionDto>,
-  ) {
-    const query = this.permissionRepository
-      .createQueryBuilder()
-      .update()
-      .set({
-        name: updatePermissionDto.name,
-        domain: updatePermissionDto.domain,
-        description: updatePermissionDto.description,
-      })
-      .where('id := permissionId', { permissionId });
-
-    return query.execute();
-  }
+        return query.execute();
+    }
 }

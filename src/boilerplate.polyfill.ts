@@ -12,151 +12,156 @@ import type { PageOptionsDto } from './common/dto/page-options.dto';
 import type { KeyOfType } from './types';
 
 declare global {
-  export type Uuid = string & { _uuidBrand: undefined };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-redundant-type-constituents
-  export type Todo = any & { _todoBrand: undefined };
+    export type Uuid = string & { _uuidBrand: undefined };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-redundant-type-constituents
+    export type Todo = any & { _todoBrand: undefined };
 
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  interface Array<T> {
-    toDtos<Dto extends AbstractDto>(this: T[], options?: unknown): Dto[];
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    interface Array<T> {
+        toDtos<Dto extends AbstractDto>(this: T[], options?: unknown): Dto[];
 
-    toPageDto<Dto extends AbstractDto>(
-      this: T[],
-      pageMetaDto: PageMetaDto,
-      // FIXME make option type visible from entity
-      options?: unknown,
-    ): PageDto<Dto>;
-  }
+        toPageDto<Dto extends AbstractDto>(
+            this: T[],
+            pageMetaDto: PageMetaDto,
+            // FIXME make option type visible from entity
+            options?: unknown,
+        ): PageDto<Dto>;
+    }
 }
 
 declare module 'typeorm' {
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  interface SelectQueryBuilder<Entity> {
-    searchByString(
-      q: string,
-      columnNames: string[],
-      options?: {
-        formStart: boolean;
-      },
-    ): this;
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    interface SelectQueryBuilder<Entity> {
+        searchByString(
+            q: string,
+            columnNames: string[],
+            options?: {
+                formStart: boolean;
+            },
+        ): this;
 
-    paginate(
-      this: SelectQueryBuilder<Entity>,
-      pageOptionsDto: PageOptionsDto,
-      options?: Partial<{ takeAll: boolean; skipCount: boolean }>,
-    ): Promise<[Entity[], PageMetaDto]>;
+        paginate(
+            this: SelectQueryBuilder<Entity>,
+            pageOptionsDto: PageOptionsDto,
+            options?: Partial<{ takeAll: boolean; skipCount: boolean }>,
+        ): Promise<[Entity[], PageMetaDto]>;
 
-    leftJoinAndSelect<AliasEntity extends AbstractEntity, A extends string>(
-      this: SelectQueryBuilder<Entity>,
-      property: `${A}.${Exclude<
-        KeyOfType<AliasEntity, AbstractEntity>,
-        symbol
-      >}`,
-      alias: string,
-      condition?: string,
-      parameters?: ObjectLiteral,
-    ): this;
+        leftJoinAndSelect<AliasEntity extends AbstractEntity, A extends string>(
+            this: SelectQueryBuilder<Entity>,
+            property: `${A}.${Exclude<
+                KeyOfType<AliasEntity, AbstractEntity>,
+                symbol
+            >}`,
+            alias: string,
+            condition?: string,
+            parameters?: ObjectLiteral,
+        ): this;
 
-    leftJoin<AliasEntity extends AbstractEntity, A extends string>(
-      this: SelectQueryBuilder<Entity>,
-      property: `${A}.${Exclude<
-        KeyOfType<AliasEntity, AbstractEntity>,
-        symbol
-      >}`,
-      alias: string,
-      condition?: string,
-      parameters?: ObjectLiteral,
-    ): this;
+        leftJoin<AliasEntity extends AbstractEntity, A extends string>(
+            this: SelectQueryBuilder<Entity>,
+            property: `${A}.${Exclude<
+                KeyOfType<AliasEntity, AbstractEntity>,
+                symbol
+            >}`,
+            alias: string,
+            condition?: string,
+            parameters?: ObjectLiteral,
+        ): this;
 
-    innerJoinAndSelect<AliasEntity extends AbstractEntity, A extends string>(
-      this: SelectQueryBuilder<Entity>,
-      property: `${A}.${Exclude<
-        KeyOfType<AliasEntity, AbstractEntity>,
-        symbol
-      >}`,
-      alias: string,
-      condition?: string,
-      parameters?: ObjectLiteral,
-    ): this;
+        innerJoinAndSelect<
+            AliasEntity extends AbstractEntity,
+            A extends string,
+        >(
+            this: SelectQueryBuilder<Entity>,
+            property: `${A}.${Exclude<
+                KeyOfType<AliasEntity, AbstractEntity>,
+                symbol
+            >}`,
+            alias: string,
+            condition?: string,
+            parameters?: ObjectLiteral,
+        ): this;
 
-    innerJoin<AliasEntity extends AbstractEntity, A extends string>(
-      this: SelectQueryBuilder<Entity>,
-      property: `${A}.${Exclude<
-        KeyOfType<AliasEntity, AbstractEntity>,
-        symbol
-      >}`,
-      alias: string,
-      condition?: string,
-      parameters?: ObjectLiteral,
-    ): this;
-  }
+        innerJoin<AliasEntity extends AbstractEntity, A extends string>(
+            this: SelectQueryBuilder<Entity>,
+            property: `${A}.${Exclude<
+                KeyOfType<AliasEntity, AbstractEntity>,
+                symbol
+            >}`,
+            alias: string,
+            condition?: string,
+            parameters?: ObjectLiteral,
+        ): this;
+    }
 }
 
 Array.prototype.toDtos = function <
-  Entity extends AbstractEntity<Dto>,
-  Dto extends AbstractDto,
+    Entity extends AbstractEntity<Dto>,
+    Dto extends AbstractDto,
 >(options?: unknown): Dto[] {
-  return compact(
-    map<Entity, Dto>(this as Entity[], (item) => item.toDto(options as never)),
-  );
+    return compact(
+        map<Entity, Dto>(this as Entity[], (item) =>
+            item.toDto(options as never),
+        ),
+    );
 };
 
 Array.prototype.toPageDto = function (
-  pageMetaDto: PageMetaDto,
-  options?: unknown,
+    pageMetaDto: PageMetaDto,
+    options?: unknown,
 ) {
-  return new PageDto(this.toDtos(options), pageMetaDto);
+    return new PageDto(this.toDtos(options), pageMetaDto);
 };
 
 SelectQueryBuilder.prototype.searchByString = function (
-  q,
-  columnNames,
-  options,
+    q,
+    columnNames,
+    options,
 ) {
-  if (!q) {
+    if (!q) {
+        return this;
+    }
+
+    this.andWhere(
+        new Brackets((qb) => {
+            for (const item of columnNames) {
+                qb.orWhere(`${item} ILIKE :q`);
+            }
+        }),
+    );
+
+    if (options?.formStart) {
+        this.setParameter('q', `${q}%`);
+    } else {
+        this.setParameter('q', `%${q}%`);
+    }
+
     return this;
-  }
-
-  this.andWhere(
-    new Brackets((qb) => {
-      for (const item of columnNames) {
-        qb.orWhere(`${item} ILIKE :q`);
-      }
-    }),
-  );
-
-  if (options?.formStart) {
-    this.setParameter('q', `${q}%`);
-  } else {
-    this.setParameter('q', `%${q}%`);
-  }
-
-  return this;
 };
 
 SelectQueryBuilder.prototype.paginate = async function (
-  pageOptionsDto: PageOptionsDto,
-  options?: Partial<{
-    skipCount: boolean;
-    takeAll: boolean;
-  }>,
+    pageOptionsDto: PageOptionsDto,
+    options?: Partial<{
+        skipCount: boolean;
+        takeAll: boolean;
+    }>,
 ) {
-  if (!options?.takeAll) {
-    this.skip(pageOptionsDto.skip).take(pageOptionsDto.take);
-  }
+    if (!options?.takeAll) {
+        this.skip(pageOptionsDto.skip).take(pageOptionsDto.take);
+    }
 
-  const entities = await this.getMany();
+    const entities = await this.getMany();
 
-  let itemCount = -1;
+    let itemCount = -1;
 
-  if (!options?.skipCount) {
-    itemCount = await this.getCount();
-  }
+    if (!options?.skipCount) {
+        itemCount = await this.getCount();
+    }
 
-  const pageMetaDto = new PageMetaDto({
-    itemCount,
-    pageOptionsDto,
-  });
+    const pageMetaDto = new PageMetaDto({
+        itemCount,
+        pageOptionsDto,
+    });
 
-  return [entities, pageMetaDto];
+    return [entities, pageMetaDto];
 };

@@ -8,37 +8,40 @@ import type { UserEntity } from '../user.entity';
 export type UserDtoOptions = Partial<{ isActive: boolean }>;
 
 export class UserDto extends AbstractDto {
-  @ApiPropertyOptional()
-  firstName?: string;
+    @ApiPropertyOptional()
+    firstName?: string;
 
-  @ApiPropertyOptional()
-  lastName?: string;
+    @ApiPropertyOptional()
+    lastName?: string;
 
-  @ApiProperty()
-  username: string;
+    @ApiProperty()
+    username: string;
 
-  @ApiPropertyOptional()
-  email?: string;
+    @ApiPropertyOptional()
+    email?: string;
 
-  @ApiPropertyOptional()
-  avatar?: string;
+    @ApiPropertyOptional()
+    avatar?: string;
 
-  @ApiPropertyOptional()
-  phone?: string;
+    @ApiPropertyOptional()
+    phone?: string;
 
-  @ApiPropertyOptional()
-  isActive?: boolean;
+    @ApiPropertyOptional()
+    isActive?: boolean;
 
-  role?: RoleDto;
+    @ApiPropertyOptional()
+    birthDate: Date;
 
-  constructor(user: UserEntity, options?: UserDtoOptions) {
-    super(user);
-    this.firstName = user.firstName;
-    this.lastName = user.lastName;
-    this.email = user.email;
-    this.avatar = user.avatar;
-    this.phone = user.phone;
-    this.isActive = options?.isActive;
-    this.role = user.role?.toDto();
-  }
+    role?: RoleDto;
+
+    constructor(user: UserEntity, options?: UserDtoOptions) {
+        super(user);
+        this.firstName = user.firstName;
+        this.lastName = user.lastName;
+        this.email = user.email;
+        this.avatar = user.avatar;
+        this.phone = user.phone;
+        this.isActive = options?.isActive;
+        this.role = user.role?.toDto();
+    }
 }

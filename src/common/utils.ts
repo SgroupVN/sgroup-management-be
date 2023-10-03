@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
  * @returns {string}
  */
 export function generateHash(password: string): string {
-  return bcrypt.hashSync(password, 10);
+    return bcrypt.hashSync(password, 10);
 }
 
 /**
@@ -16,31 +16,31 @@ export function generateHash(password: string): string {
  * @returns {Promise<boolean>}
  */
 export function validateHash(
-  password: string | undefined,
-  hash: string | undefined,
+    password: string | undefined,
+    hash: string | undefined,
 ): Promise<boolean> {
-  if (!password || !hash) {
-    return Promise.resolve(false);
-  }
+    if (!password || !hash) {
+        return Promise.resolve(false);
+    }
 
-  return bcrypt.compare(password, hash);
+    return bcrypt.compare(password, hash);
 }
 
 export function getVariableName<TResult>(getVar: () => TResult): string {
-  const m = /\(\)=>(.*)/.exec(
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    getVar.toString().replaceAll(/(\r\n|\n|\r|\s)/gm, ''),
-  );
-
-  if (!m) {
-    throw new Error(
-      "The function does not contain a statement matching 'return variableName;'",
+    const m = /\(\)=>(.*)/.exec(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        getVar.toString().replaceAll(/(\r\n|\n|\r|\s)/gm, ''),
     );
-  }
 
-  const fullMemberName = m[1];
+    if (!m) {
+        throw new Error(
+            "The function does not contain a statement matching 'return variableName;'",
+        );
+    }
 
-  const memberParts = fullMemberName.split('.');
+    const fullMemberName = m[1];
 
-  return memberParts.at(-1) || '';
+    const memberParts = fullMemberName.split('.');
+
+    return memberParts.at(-1) || '';
 }

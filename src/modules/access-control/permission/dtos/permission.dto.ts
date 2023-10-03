@@ -5,7 +5,7 @@ import { IsNotEmpty } from 'class-validator';
 export type PermissionDtoOptions = Partial<{ isActive: boolean }>;
 
 export class PermissionDto extends AbstractDto {
-  @ApiProperty()
-  @IsNotEmpty()
-  name: string;
+    @ApiProperty()
+    @IsNotEmpty()
+    name: string;
 }

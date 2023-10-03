@@ -9,22 +9,25 @@ import { UserEntity } from './user.entity';
 @Entity({ name: 'user_settings' })
 @UseDto(UserDto)
 export class UserSettingsEntity extends AbstractEntity<
-  UserDto,
-  UserDtoOptions
+    UserDto,
+    UserDtoOptions
 > {
-  @Column({ default: false })
-  isEmailVerified?: boolean;
+    @Column({ default: false })
+    isEmailVerified?: boolean;
 
-  @Column({ default: false })
-  isPhoneVerified?: boolean;
+    @Column({ default: false })
+    isPhoneVerified?: boolean;
 
-  @Column({ type: 'uuid' })
-  userId?: string;
+    @Column({ default: false })
+    isDefaultPasswordChanged?: boolean;
 
-  @OneToOne(() => UserEntity, (user) => user.settings, {
-    onDelete: 'CASCADE',
-    onUpdate: 'CASCADE',
-  })
-  @JoinColumn({ name: 'user_id' })
-  user?: UserEntity;
+    @Column({ type: 'uuid' })
+    userId?: string;
+
+    @OneToOne(() => UserEntity, (user) => user.settings, {
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+    })
+    @JoinColumn({ name: 'user_id' })
+    user?: UserEntity;
 }

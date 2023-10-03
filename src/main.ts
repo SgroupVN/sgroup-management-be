@@ -1,8 +1,8 @@
 import {
-  ClassSerializerInterceptor,
-  HttpStatus,
-  UnprocessableEntityException,
-  ValidationPipe,
+    ClassSerializerInterceptor,
+    HttpStatus,
+    UnprocessableEntityException,
+    ValidationPipe,
 } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -20,55 +20,56 @@ import { ApiConfigService } from './shared/services/api-config.service';
 import { SharedModule } from './shared/shared.module';
 
 export async function bootstrap(): Promise<NestExpressApplication> {
-  initializeTransactionalContext();
-  const app = await NestFactory.create<NestExpressApplication>(
-    AppModule,
-    new ExpressAdapter(),
-    { cors: true },
-  );
-  app.setGlobalPrefix('/api');
-  app.use(compression());
-  app.use(morgan('combined'));
-  app.enableVersioning();
+    initializeTransactionalContext();
+    const app = await NestFactory.create<NestExpressApplication>(
+        AppModule,
+        new ExpressAdapter(),
+        { cors: true },
+    );
+    app.setGlobalPrefix('/api');
+    app.use(compression());
+    app.use(morgan('combined'));
+    app.enableVersioning();
 
-  const reflector = app.get(Reflector);
+    const reflector = app.get(Reflector);
 
-  app.useGlobalFilters(
-    new HttpExceptionFilter(reflector),
-    new QueryFailedFilter(reflector),
-  );
+    app.useGlobalFilters(
+        new HttpExceptionFilter(reflector),
+        new QueryFailedFilter(reflector),
+    );
 
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
+    app.useGlobalInterceptors(new ClassSerializerInterceptor(reflector));
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
-      transform: true,
-      dismissDefaultMessages: true,
-      exceptionFactory: (errors) => new UnprocessableEntityException(errors),
-    }),
-  );
+    app.useGlobalPipes(
+        new ValidationPipe({
+            whitelist: true,
+            errorHttpStatusCode: HttpStatus.UNPROCESSABLE_ENTITY,
+            transform: true,
+            dismissDefaultMessages: true,
+            exceptionFactory: (errors) =>
+                new UnprocessableEntityException(errors),
+        }),
+    );
 
-  const configService = app.select(SharedModule).get(ApiConfigService);
+    const configService = app.select(SharedModule).get(ApiConfigService);
 
-  if (configService.documentationEnabled) {
-    setupSwagger(app);
-  }
+    if (configService.documentationEnabled) {
+        setupSwagger(app);
+    }
 
-  app.use(expressCtx);
+    app.use(expressCtx);
 
-  // Starts listening for shutdown hooks
-  if (!configService.isDevelopment) {
-    app.enableShutdownHooks();
-  }
+    // Starts listening for shutdown hooks
+    if (!configService.isDevelopment) {
+        app.enableShutdownHooks();
+    }
 
-  const port = configService.appConfig.port;
-  await app.listen(port);
+    const port = configService.appConfig.port;
+    await app.listen(port);
 
-  console.info(`server running on ${await app.getUrl()}`);
+    console.info(`server running on ${await app.getUrl()}`);
 
-  return app;
+    return app;
 }
 
 void bootstrap();

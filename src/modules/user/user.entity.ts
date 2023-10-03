@@ -1,11 +1,11 @@
 import {
-  Column,
-  Entity,
-  JoinTable,
-  ManyToOne,
-  OneToMany,
-  OneToOne,
-  VirtualColumn,
+    Column,
+    Entity,
+    JoinTable,
+    ManyToOne,
+    OneToMany,
+    OneToOne,
+    VirtualColumn,
 } from 'typeorm';
 
 import { AbstractEntity } from '../../common/abstract.entity';
@@ -19,43 +19,47 @@ import { UserTokenEntity } from './user-token.entity';
 @Entity({ name: 'users' })
 @UseDto(UserDto)
 export class UserEntity extends AbstractEntity<UserDto, UserDtoOptions> {
-  @Column({ nullable: true })
-  firstName?: string;
+    @Column({ nullable: true })
+    firstName?: string;
 
-  @Column({ nullable: true })
-  lastName?: string;
+    @Column({ nullable: true })
+    lastName?: string;
 
-  @Column({ unique: true, nullable: false })
-  email?: string;
+    @Column({ unique: true, nullable: false })
+    email?: string;
 
-  @Column({ nullable: true })
-  password?: string;
+    @Column({ nullable: true })
+    password?: string;
 
-  @Column({ nullable: true })
-  phone?: string;
+    @Column({ nullable: true })
+    phone?: string;
 
-  @Column({ nullable: true })
-  avatar?: string;
+    @Column({ nullable: true })
+    avatar?: string;
 
-  @VirtualColumn({
-    query: (alias) =>
-      `SELECT CONCAT(${alias}.first_name, ' ', ${alias}.last_name)`,
-  })
-  fullName?: string;
+    @Column({ nullable: true })
+    birthDate?: string;
 
-  @OneToOne(() => UserSettingsEntity, (userSettings) => userSettings.user)
-  settings?: UserSettingsEntity;
+    @VirtualColumn({
+        query: (alias) =>
+            `SELECT CONCAT(${alias}.first_name, ' ', ${alias}.last_name)`,
+    })
+    fullName?: string;
 
-  @OneToMany(() => UserTokenEntity, (userToken) => userToken.user)
-  tokens?: UserTokenEntity[];
+    @OneToOne(() => UserSettingsEntity, (userSettings) => userSettings.user)
+    @JoinTable()
+    settings?: UserSettingsEntity;
 
-  @ManyToOne(() => RoleEntity, (role) => role.user)
-  @JoinTable()
-  role?: RoleEntity;
+    @OneToMany(() => UserTokenEntity, (userToken) => userToken.user)
+    tokens?: UserTokenEntity[];
 
-  @Column({ nullable: false, type: Boolean, default: true })
-  isActive: boolean;
+    @ManyToOne(() => RoleEntity, (role) => role.user)
+    @JoinTable()
+    role?: RoleEntity;
 
-  @Column({ nullable: false, type: Boolean, default: false })
-  isDeleted: boolean;
+    @Column({ nullable: false, type: Boolean, default: true })
+    isActive: boolean;
+
+    @Column({ nullable: false, type: Boolean, default: false })
+    isDeleted: boolean;
 }

@@ -13,124 +13,125 @@ import type { UserLoginDto } from './dto/UserLoginDto';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private jwtService: JwtService,
-    private configService: ApiConfigService,
-    private userService: UserService,
-  ) {}
+    constructor(
+        private jwtService: JwtService,
+        private configService: ApiConfigService,
+        private userService: UserService,
+    ) {}
 
-  async generateTokenPair(data: {
-    userId: Uuid;
-  }): Promise<{ accessToken: string; refreshToken: string }> {
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          userId: data.userId,
-          type: TokenType.ACCESS_TOKEN,
-        },
-        {
-          expiresIn: this.configService.accessTokenLifeTime,
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          userId: data.userId,
-          type: TokenType.REFRESH_TOKEN,
-        },
-        {
-          privateKey: this.configService.authConfig.refreshTokenPrivateKey,
-          expiresIn: this.configService.refreshTokenLifeTime,
-        },
-      ),
-    ]);
+    async generateTokenPair(data: {
+        userId: Uuid;
+    }): Promise<{ accessToken: string; refreshToken: string }> {
+        const [accessToken, refreshToken] = await Promise.all([
+            this.jwtService.signAsync(
+                {
+                    userId: data.userId,
+                    type: TokenType.ACCESS_TOKEN,
+                },
+                {
+                    expiresIn: this.configService.accessTokenLifeTime,
+                },
+            ),
+            this.jwtService.signAsync(
+                {
+                    userId: data.userId,
+                    type: TokenType.REFRESH_TOKEN,
+                },
+                {
+                    privateKey:
+                        this.configService.authConfig.refreshTokenPrivateKey,
+                    expiresIn: this.configService.refreshTokenLifeTime,
+                },
+            ),
+        ]);
 
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
-
-  async handleLogin(data: {
-    role?: RoleEntity;
-    userId: Uuid;
-  }): Promise<TokenPayloadDto> {
-    const { userId } = data;
-
-    const { accessToken, refreshToken } = await this.generateTokenPair({
-      userId,
-    });
-
-    await this.storeRefreshTokenInfo({
-      userId,
-      refreshToken,
-    });
-
-    return new TokenPayloadDto({
-      accessToken,
-      refreshToken,
-    });
-  }
-
-  async grantAccessToken(
-    user: UserEntity,
-    refreshToken: string,
-  ): Promise<TokenPayloadDto> {
-    const currentUserToken = await this.userService.getUserToken({
-      userId: user.id,
-      refreshToken,
-    });
-
-    if (!currentUserToken) {
-      throw new UnauthorizedException();
+        return {
+            accessToken,
+            refreshToken,
+        };
     }
 
-    if (currentUserToken.revoked) {
-      await this.userService.revokeUserTokens(user.id);
+    async handleLogin(data: {
+        role?: RoleEntity;
+        userId: Uuid;
+    }): Promise<TokenPayloadDto> {
+        const { userId } = data;
 
-      throw new UnauthorizedException();
+        const { accessToken, refreshToken } = await this.generateTokenPair({
+            userId,
+        });
+
+        await this.storeRefreshTokenInfo({
+            userId,
+            refreshToken,
+        });
+
+        return new TokenPayloadDto({
+            accessToken,
+            refreshToken,
+        });
     }
 
-    const token = await this.generateTokenPair({
-      userId: user.id,
-    });
+    async grantAccessToken(
+        user: UserEntity,
+        refreshToken: string,
+    ): Promise<TokenPayloadDto> {
+        const currentUserToken = await this.userService.getUserToken({
+            userId: user.id,
+            refreshToken,
+        });
 
-    await this.userService.revokeUserTokens(user.id);
-    await this.userService.storeUserToken({
-      userId: user.id,
-      refreshToken: token.refreshToken,
-    });
+        if (!currentUserToken) {
+            throw new UnauthorizedException();
+        }
 
-    return new TokenPayloadDto(token);
-  }
+        if (currentUserToken.revoked) {
+            await this.userService.revokeUserTokens(user.id);
 
-  async validateUser(userLoginDto: UserLoginDto): Promise<UserEntity> {
-    const user = await this.userService.findOne({
-      email: userLoginDto.email,
-    });
+            throw new UnauthorizedException();
+        }
 
-    const isPasswordValid = await validateHash(
-      userLoginDto.password,
-      user?.password,
-    );
+        const token = await this.generateTokenPair({
+            userId: user.id,
+        });
 
-    if (!isPasswordValid) {
-      throw new UserNotFoundException();
+        await this.userService.revokeUserTokens(user.id);
+        await this.userService.storeUserToken({
+            userId: user.id,
+            refreshToken: token.refreshToken,
+        });
+
+        return new TokenPayloadDto(token);
     }
 
-    return user!;
-  }
+    async validateUser(userLoginDto: UserLoginDto): Promise<UserEntity> {
+        const user = await this.userService.findOne({
+            email: userLoginDto.email,
+        });
 
-  async storeRefreshTokenInfo({
-    userId,
-    refreshToken,
-  }: {
-    userId: Uuid;
-    refreshToken: string;
-  }) {
-    await this.userService.revokeUserTokens(userId);
-    await this.userService.storeUserToken({
-      refreshToken,
-      userId,
-    });
-  }
+        const isPasswordValid = await validateHash(
+            userLoginDto.password,
+            user?.password,
+        );
+
+        if (!isPasswordValid) {
+            throw new UserNotFoundException();
+        }
+
+        return user!;
+    }
+
+    async storeRefreshTokenInfo({
+        userId,
+        refreshToken,
+    }: {
+        userId: Uuid;
+        refreshToken: string;
+    }) {
+        await this.userService.revokeUserTokens(userId);
+        await this.userService.storeUserToken({
+            refreshToken,
+            userId,
+        });
+    }
 }

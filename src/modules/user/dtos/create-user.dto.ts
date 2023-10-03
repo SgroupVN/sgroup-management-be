@@ -5,12 +5,11 @@ import {
     IsOptional,
     IsPhoneNumber,
     IsString,
-    MinLength,
 } from 'class-validator';
 
 import { Trim } from '../../../decorators/transform.decorators';
 
-export class UserRegisterDto {
+export class CreateUserDto {
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
@@ -30,14 +29,14 @@ export class UserRegisterDto {
     @Trim()
     readonly email: string;
 
-    @ApiProperty({ minLength: 6 })
-    @IsString()
-    @MinLength(6)
-    readonly password: string;
-
     @ApiPropertyOptional()
     @IsOptional()
     @IsPhoneNumber()
     @Trim()
-    phone: string;
+    readonly phone: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Trim()
+    readonly birthDate: string;
 }

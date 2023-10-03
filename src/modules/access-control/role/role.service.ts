@@ -12,99 +12,100 @@ import { RoleEntity } from './role.entity';
 
 @Injectable()
 export class RoleService {
-  constructor(
-    @InjectRepository(RoleEntity)
-    private roleRepository: Repository<RoleEntity>,
-  ) {}
+    constructor(
+        @InjectRepository(RoleEntity)
+        private roleRepository: Repository<RoleEntity>,
+    ) {}
 
-  createOne(createRoleDto: CreateRoleDto) {
-    return this.roleRepository.save(createRoleDto);
-  }
-
-  async getRoles(queryCriterias: GetRoleDto): Promise<PageDto<RoleDto>> {
-    const queryBuilder = this.roleRepository.createQueryBuilder();
-
-    queryBuilder.where('is_deleted = :isDeleted', { isDeleted: false });
-
-    if (queryCriterias.name) {
-      queryBuilder.andWhere('name LIKE :name', {
-        name: `%${queryCriterias.name}%`,
-      });
+    createOne(createRoleDto: CreateRoleDto) {
+        return this.roleRepository.save(createRoleDto);
     }
 
-    const [items, pageMetaDto] = await queryBuilder.paginate(queryCriterias);
+    async getRoles(queryCriterias: GetRoleDto): Promise<PageDto<RoleDto>> {
+        const queryBuilder = this.roleRepository.createQueryBuilder();
 
-    return items.toPageDto(pageMetaDto);
-  }
+        queryBuilder.where('is_deleted = :isDeleted', { isDeleted: false });
 
-  async getById(roleId: string): Promise<RoleDto | undefined> {
-    const role = await this.roleRepository.findOne({
-      where: { id: roleId, isDeleted: false },
-    } as FindOneOptions<RoleEntity>);
+        if (queryCriterias.name) {
+            queryBuilder.andWhere('name LIKE :name', {
+                name: `%${queryCriterias.name}%`,
+            });
+        }
 
-    return role?.toDto();
-  }
+        const [items, pageMetaDto] =
+            await queryBuilder.paginate(queryCriterias);
 
-  async deleteById(roleId: string) {
-    return this.roleRepository
-      .createQueryBuilder()
-      .update()
-      .set({ isDeleted: true })
-      .where('id = :roleId', { roleId })
-      .execute();
-  }
-
-  async attachPermissions({
-    roleId,
-    permissionIds,
-  }: {
-    roleId: string;
-    permissionIds: string[];
-  }) {
-    const role = await this.roleRepository.findOne({
-      where: {
-        id: roleId,
-      },
-      relations: {
-        permissions: true,
-      },
-    } as FindOneOptions<RoleEntity>);
-
-    if (!role) {
-      throw new RoleNotFoundException();
+        return items.toPageDto(pageMetaDto);
     }
 
-    return this.roleRepository
-      .createQueryBuilder()
-      .relation(RoleEntity, 'permissions')
-      .of(role)
-      .add(permissionIds);
-  }
+    async getById(roleId: string): Promise<RoleDto | undefined> {
+        const role = await this.roleRepository.findOne({
+            where: { id: roleId, isDeleted: false },
+        } as FindOneOptions<RoleEntity>);
 
-  async revokePermissions({
-    roleId,
-    permissionIds,
-  }: {
-    roleId: string;
-    permissionIds: string[];
-  }) {
-    const role = await this.roleRepository.findOne({
-      where: {
-        id: roleId,
-      },
-      relations: {
-        permissions: true,
-      },
-    } as FindOneOptions<RoleEntity>);
-
-    if (!role) {
-      throw new RoleNotFoundException();
+        return role?.toDto();
     }
 
-    return this.roleRepository
-      .createQueryBuilder()
-      .relation(RoleEntity, 'permissions')
-      .of(role)
-      .remove(permissionIds);
-  }
+    async deleteById(roleId: string) {
+        return this.roleRepository
+            .createQueryBuilder()
+            .update()
+            .set({ isDeleted: true })
+            .where('id = :roleId', { roleId })
+            .execute();
+    }
+
+    async attachPermissions({
+        roleId,
+        permissionIds,
+    }: {
+        roleId: string;
+        permissionIds: string[];
+    }) {
+        const role = await this.roleRepository.findOne({
+            where: {
+                id: roleId,
+            },
+            relations: {
+                permissions: true,
+            },
+        } as FindOneOptions<RoleEntity>);
+
+        if (!role) {
+            throw new RoleNotFoundException();
+        }
+
+        return this.roleRepository
+            .createQueryBuilder()
+            .relation(RoleEntity, 'permissions')
+            .of(role)
+            .add(permissionIds);
+    }
+
+    async revokePermissions({
+        roleId,
+        permissionIds,
+    }: {
+        roleId: string;
+        permissionIds: string[];
+    }) {
+        const role = await this.roleRepository.findOne({
+            where: {
+                id: roleId,
+            },
+            relations: {
+                permissions: true,
+            },
+        } as FindOneOptions<RoleEntity>);
+
+        if (!role) {
+            throw new RoleNotFoundException();
+        }
+
+        return this.roleRepository
+            .createQueryBuilder()
+            .relation(RoleEntity, 'permissions')
+            .of(role)
+            .remove(permissionIds);
+    }
 }
