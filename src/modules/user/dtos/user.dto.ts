@@ -3,45 +3,53 @@ import type { RoleDto } from '@src/modules/access-control/role/dtos/role.dto';
 
 import { AbstractDto } from '../../../common/dto/abstract.dto';
 import type { UserEntity } from '../user.entity';
+import { UserStatus } from '@src/constants/user';
 
 // TODO, remove this class and use constructor's second argument's type
 export type UserDtoOptions = Partial<{ isActive: boolean }>;
 
 export class UserDto extends AbstractDto {
-    @ApiPropertyOptional()
-    firstName?: string;
-
-    @ApiPropertyOptional()
-    lastName?: string;
+    @ApiProperty()
+    name?: string;
 
     @ApiProperty()
-    username: string;
-
-    @ApiPropertyOptional()
     email?: string;
 
     @ApiPropertyOptional()
     avatar?: string;
 
-    @ApiPropertyOptional()
+    @ApiProperty()
     phone?: string;
 
-    @ApiPropertyOptional()
-    isActive?: boolean;
+    @ApiProperty()
+    status?: UserStatus;
+
+    @ApiProperty()
+    lateCount?: number;
+
+    @ApiProperty()
+    debt?: number;
 
     @ApiPropertyOptional()
-    birthDate: Date;
+    birthDate?: string;
+
+    @ApiProperty()
+    isDeleted: boolean;
 
     role?: RoleDto;
 
-    constructor(user: UserEntity, options?: UserDtoOptions) {
+    constructor(user: UserEntity) {
         super(user);
-        this.firstName = user.firstName;
-        this.lastName = user.lastName;
+        this.name = user.name;
+        this.lateCount = user.lateCount;
+        this.debt = user.debt;
+        this.status = user.status;
         this.email = user.email;
         this.avatar = user.avatar;
         this.phone = user.phone;
-        this.isActive = options?.isActive;
+        this.isDeleted = user.isDeleted;
+        this.birthDate = user.birthDate;
+        this.isDeleted = user.isDeleted;
         this.role = user.role?.toDto();
     }
 }

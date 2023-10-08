@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToClass } from 'class-transformer';
-import type { FindOptionsWhere } from 'typeorm';
+import type { FindOptionsWhere, UpdateResult } from 'typeorm';
 import { Repository } from 'typeorm';
 import { Transactional } from 'typeorm-transactional';
 
@@ -21,6 +21,7 @@ import { UserTokenEntity } from './user-token.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { ConfigService } from '@src/configs/config.service';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { ImportUserDto } from './dtos/import-user.dto';
 
 @Injectable()
 export class UserService {
@@ -41,7 +42,10 @@ export class UserService {
         findData: FindOptionsWhere<UserEntity>,
     ): Promise<UserEntity | null> {
         return this.userRepository.findOne({
-            where: findData,
+            where: {
+                ...findData,
+                isDeleted: false,
+            },
             relations: {
                 settings: true,
                 role: {
@@ -123,6 +127,25 @@ export class UserService {
     }
 
     @Transactional()
+    async importUsers(importUserDto: ImportUserDto): Promise<any> {
+        const { importedData, mappedFields } = importUserDto;
+
+        const users = importedData.map((record: any) => {
+            const user: any = {};
+            Object.entries(mappedFields).forEach((entry) => {
+                const [key, value] = entry;
+                user[value] = record[key];
+            });
+
+            return user;
+        });
+
+        // Validate user
+
+        return this.createUsers(users);
+    }
+
+    @Transactional()
     async createUsers(createUsersDto: CreateUserDto[]): Promise<any> {
         const defaultPassword = this.configService.memberDefaultPassword;
         const users = this.userRepository.create(
@@ -163,15 +186,32 @@ export class UserService {
             .update()
             .set(updateUserDto);
 
-        await queryBuilder.where('id = :userId', { userId }).execute();
+        queryBuilder.where('id = :userId', { userId });
+        queryBuilder.andWhere('is_deleted = :isDeleted', { isDeleted: false });
 
         return this.getUser(userId);
+    }
+
+    async deleteUser({ userId }: { userId: Uuid }): Promise<UpdateResult> {
+        const queryBuilder = this.userRepository
+            .createQueryBuilder()
+            .update()
+            .set({
+                isDeleted: true,
+            });
+
+        return await queryBuilder.where('id = :userId', { userId }).execute();
     }
 
     async getUsers(
         pageOptionsDto: UsersPageOptionsDto,
     ): Promise<PageDto<UserDto>> {
         const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+        queryBuilder.where('is_deleted = :isDeleted', {
+            isDeleted: false,
+        });
+
         const [items, pageMetaDto] =
             await queryBuilder.paginate(pageOptionsDto);
 
@@ -182,6 +222,10 @@ export class UserService {
         const queryBuilder = this.userRepository.createQueryBuilder();
 
         queryBuilder.where('id = :userId', { userId });
+
+        queryBuilder.andWhere('is_deleted = :isDeleted', {
+            isDeleted: false,
+        });
 
         const userEntity = await queryBuilder.getOne();
 

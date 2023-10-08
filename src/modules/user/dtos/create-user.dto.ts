@@ -1,26 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-    IsEmail,
-    IsNotEmpty,
-    IsOptional,
-    IsPhoneNumber,
-    IsString,
-} from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 import { Trim } from '../../../decorators/transform.decorators';
+import { UserStatus } from '@src/constants/user';
 
 export class CreateUserDto {
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
     @Trim()
-    readonly firstName: string;
-
-    @ApiProperty()
-    @IsString()
-    @IsNotEmpty()
-    @Trim()
-    readonly lastName: string;
+    readonly name: string;
 
     @ApiProperty()
     @IsString()
@@ -29,14 +18,35 @@ export class CreateUserDto {
     @Trim()
     readonly email: string;
 
-    @ApiPropertyOptional()
+    @ApiProperty()
     @IsOptional()
-    @IsPhoneNumber()
     @Trim()
     readonly phone: string;
 
     @ApiPropertyOptional()
     @IsOptional()
     @Trim()
+    @IsString()
     readonly birthDate: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Trim()
+    @IsString()
+    readonly major: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Trim()
+    readonly status: UserStatus;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Trim()
+    readonly lateCount: number;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Trim()
+    readonly debt: number;
 }
