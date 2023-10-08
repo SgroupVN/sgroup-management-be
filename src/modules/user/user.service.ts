@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { CommandBus } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { plainToClass } from 'class-transformer';
-import type { FindOptionsWhere } from 'typeorm';
-import { Repository } from 'typeorm';
+import type { FindOptionsWhere, UpdateResult } from 'typeorm';
+import { Like, Repository } from 'typeorm';
 import { Transactional } from 'typeorm-transactional';
 
 import type { PageDto } from '../../common/dto/page.dto';
@@ -21,6 +21,11 @@ import { UserTokenEntity } from './user-token.entity';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { ConfigService } from '@src/configs/config.service';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { ImportUserDto } from './dtos/import-user.dto';
+import { DeleteUsersDto } from './dtos/delete-users.dto';
+import { RoleType } from '@src/constants';
+import { RoleService } from '../access-control/role/role.service';
+import { PageMetaDto } from '@src/common/dto/page-meta.dto';
 
 @Injectable()
 export class UserService {
@@ -32,6 +37,7 @@ export class UserService {
         private validatorService: ValidatorService,
         private commandBus: CommandBus,
         private configService: ConfigService,
+        private roleService: RoleService,
     ) {}
 
     /**
@@ -41,7 +47,10 @@ export class UserService {
         findData: FindOptionsWhere<UserEntity>,
     ): Promise<UserEntity | null> {
         return this.userRepository.findOne({
-            where: findData,
+            where: {
+                ...findData,
+                isDeleted: false,
+            },
             relations: {
                 settings: true,
                 role: {
@@ -49,28 +58,6 @@ export class UserService {
                 },
             },
         });
-    }
-
-    async findByUsernameOrEmail(
-        options: Partial<{ username: string; email: string }>,
-    ): Promise<UserEntity | null> {
-        const queryBuilder = this.userRepository
-            .createQueryBuilder('users')
-            .leftJoinAndSelect<UserEntity, 'user'>('user.settings', 'settings');
-
-        if (options.email) {
-            queryBuilder.orWhere('user.email = :email', {
-                email: options.email,
-            });
-        }
-
-        if (options.username) {
-            queryBuilder.orWhere('user.username = :username', {
-                username: options.username,
-            });
-        }
-
-        return queryBuilder.getOne();
     }
 
     @Transactional()
@@ -103,7 +90,9 @@ export class UserService {
     @Transactional()
     async createUser(createUserDto: CreateUserDto): Promise<UserDto> {
         const defaultPassword = this.configService.memberDefaultPassword;
+        const role = await this.roleService.getByName(RoleType.MEMBER);
         const user = this.userRepository.create({
+            role,
             password: defaultPassword,
             ...createUserDto,
         });
@@ -123,11 +112,30 @@ export class UserService {
     }
 
     @Transactional()
+    async importUsers(importUserDto: ImportUserDto): Promise<any> {
+        const { importedData, mappedFields } = importUserDto;
+
+        const users = importedData.map((record: any) => {
+            const user: any = {};
+            Object.entries(mappedFields).forEach((entry) => {
+                const [key, value] = entry;
+                user[value] = record[key];
+            });
+
+            return user;
+        });
+
+        return this.createUsers(users);
+    }
+
+    @Transactional()
     async createUsers(createUsersDto: CreateUserDto[]): Promise<any> {
         const defaultPassword = this.configService.memberDefaultPassword;
+        const role = await this.roleService.getByName(RoleType.MEMBER);
         const users = this.userRepository.create(
             createUsersDto.map((user) => {
                 return {
+                    role,
                     password: defaultPassword,
                     ...user,
                 };
@@ -163,17 +171,74 @@ export class UserService {
             .update()
             .set(updateUserDto);
 
-        await queryBuilder.where('id = :userId', { userId }).execute();
+        queryBuilder.where('id = :userId', { userId });
+        await queryBuilder.execute();
 
         return this.getUser(userId);
+    }
+
+    async deleteUser({ userId }: { userId: Uuid }): Promise<UpdateResult> {
+        const queryBuilder = this.userRepository
+            .createQueryBuilder()
+            .update()
+            .set({
+                isDeleted: true,
+            });
+
+        return await queryBuilder.where('id = :userId', { userId }).execute();
+    }
+
+    async deleteUsers(deleteUsersDto: DeleteUsersDto): Promise<UpdateResult> {
+        const queryBuilder = this.userRepository
+            .createQueryBuilder()
+            .update()
+            .set({
+                isDeleted: true,
+            });
+
+        return await queryBuilder
+            .where('id IN(:...ids)', { ids: deleteUsersDto.ids })
+            .execute();
     }
 
     async getUsers(
         pageOptionsDto: UsersPageOptionsDto,
     ): Promise<PageDto<UserDto>> {
-        const queryBuilder = this.userRepository.createQueryBuilder('user');
-        const [items, pageMetaDto] =
-            await queryBuilder.paginate(pageOptionsDto);
+        const queryableFields = ['name', 'major', 'email', 'phone'];
+        const role = await this.roleService.getByName(RoleType.MEMBER);
+
+        const query = {
+            where: {
+                isDeleted: false,
+                role: {
+                    id: role?.id,
+                },
+            },
+            relations: {
+                role: true,
+            },
+            order: {},
+        };
+
+        queryableFields.forEach((field) => {
+            if (pageOptionsDto[field]) {
+                query.where[field] = Like(pageOptionsDto[field]);
+            }
+        });
+
+        if (pageOptionsDto.sort) {
+            query.order = pageOptionsDto.sort;
+        }
+
+        const items = await this.userRepository.find(query);
+        const itemCount = await this.userRepository.count({
+            where: query.where,
+        });
+
+        const pageMetaDto = new PageMetaDto({
+            itemCount,
+            pageOptionsDto,
+        });
 
         return items.toPageDto(pageMetaDto);
     }
@@ -182,6 +247,10 @@ export class UserService {
         const queryBuilder = this.userRepository.createQueryBuilder();
 
         queryBuilder.where('id = :userId', { userId });
+
+        queryBuilder.andWhere('is_deleted = :isDeleted', {
+            isDeleted: false,
+        });
 
         const userEntity = await queryBuilder.getOne();
 

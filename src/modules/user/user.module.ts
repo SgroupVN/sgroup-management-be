@@ -8,6 +8,7 @@ import { UserService } from './user.service';
 import { UserSettingsEntity } from './user-settings.entity';
 import { UserTokenEntity } from './user-token.entity';
 import { ConfigModule } from '@src/configs/config.module';
+import { RoleModule } from '../access-control/role/role.module';
 
 export const handlers = [CreateSettingsHandler];
 
@@ -18,6 +19,7 @@ export const handlers = [CreateSettingsHandler];
             UserSettingsEntity,
             UserTokenEntity,
         ]),
+        RoleModule,
         ConfigModule,
     ],
     controllers: [UserController],

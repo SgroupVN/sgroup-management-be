@@ -22,15 +22,10 @@ export class UserSubscriber implements EntitySubscriberInterface<UserEntity> {
 
     beforeUpdate(event: UpdateEvent<UserEntity>): void {
         // FIXME check event.databaseEntity.password
-        console.log('Before update');
         const entity = event.entity as UserEntity;
-
-        console.log(entity);
 
         if (entity.password) {
             entity.password = generateHash(entity.password!);
         }
-
-        console.log(entity);
     }
 }

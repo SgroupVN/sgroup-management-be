@@ -2,6 +2,7 @@ import { Order } from '../../constants';
 import {
     EnumFieldOptional,
     NumberFieldOptional,
+    SortFieldsOptional,
     StringFieldOptional,
 } from '../../decorators';
 
@@ -10,6 +11,9 @@ export class PageOptionsDto {
         default: Order.ASC,
     })
     readonly order: Order = Order.ASC;
+
+    @SortFieldsOptional()
+    readonly sort: Record<string, Order>;
 
     @NumberFieldOptional({
         minimum: 1,

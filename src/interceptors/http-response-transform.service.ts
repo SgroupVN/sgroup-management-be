@@ -24,6 +24,7 @@ export class HttpResponseTransformInterceptor<T>
                 if (response?.data) {
                     return {
                         data: response.data,
+                        meta: response.meta,
                         success: true,
                     };
                 }

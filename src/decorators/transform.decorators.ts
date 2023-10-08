@@ -3,6 +3,7 @@ import { parsePhoneNumber } from 'libphonenumber-js';
 import { castArray, isArray, isNil, map, trim } from 'lodash';
 
 import { GeneratorProvider } from '../providers';
+import { Order } from '@src/constants';
 
 /**
  * @description trim spaces from start and end, replace multiple spaces with one.
@@ -42,6 +43,33 @@ export function ToBoolean(): PropertyDecorator {
                     return params.value;
                 }
             }
+        },
+        { toClassOnly: true },
+    );
+}
+
+export function ToSortObject(): PropertyDecorator {
+    return Transform(
+        (params) => {
+            console.log(params);
+            const sortOptions = {};
+
+            if (typeof params.value !== 'string') {
+                return params.value;
+            }
+
+            const sortFields = params.value.split(',');
+
+            sortFields.forEach((sortCondition: string) => {
+                if (sortCondition.startsWith('-')) {
+                    sortOptions[`${sortCondition.substring(1)}`] = Order.DESC;
+                    return;
+                }
+
+                sortOptions[`${sortCondition}`] = Order.ASC;
+            });
+
+            return sortOptions;
         },
         { toClassOnly: true },
     );

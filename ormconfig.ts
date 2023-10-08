@@ -1,14 +1,15 @@
 import './src/boilerplate.polyfill';
 
 import { config } from 'dotenv';
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { SeederOptions } from 'typeorm-extension';
 
 import { UserSubscriber } from './src/entity-subscribers/user-subscriber';
 import { SnakeNamingStrategy } from './src/snake-naming.strategy';
 
 config();
 
-export const dataSource = new DataSource({
+const options: DataSourceOptions & SeederOptions = {
     type: 'postgres',
     host: process.env.DB_HOST,
     port: Number(process.env.DB_PORT),
@@ -22,4 +23,10 @@ export const dataSource = new DataSource({
         'src/modules/**/*.view-entity{.ts,.js}',
     ],
     migrations: ['src/database/migrations/*{.ts,.js}'],
-});
+    seeds: ['src/database/seeds/*{.ts,.js}'],
+    factories: ['src/database/factories/**/*{.ts,.js}'],
+};
+
+export const dataSource = new DataSource(options);
+
+module.exports = options;

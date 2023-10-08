@@ -9,6 +9,7 @@ import type { CreateRoleDto } from './dtos/CreateRoleDto';
 import type { GetRoleDto } from './dtos/GetRoleDto';
 import type { RoleDto } from './dtos/role.dto';
 import { RoleEntity } from './role.entity';
+import { RoleType } from '@src/constants';
 
 @Injectable()
 export class RoleService {
@@ -41,6 +42,14 @@ export class RoleService {
     async getById(roleId: string): Promise<RoleDto | undefined> {
         const role = await this.roleRepository.findOne({
             where: { id: roleId, isDeleted: false },
+        } as FindOneOptions<RoleEntity>);
+
+        return role?.toDto();
+    }
+
+    async getByName(roleName: RoleType): Promise<RoleDto | undefined> {
+        const role = await this.roleRepository.findOne({
+            where: { name: roleName, isDeleted: false },
         } as FindOneOptions<RoleEntity>);
 
         return role?.toDto();

@@ -9,17 +9,21 @@ import {
     HttpStatus,
     Query,
     ValidationPipe,
+    Delete,
 } from '@nestjs/common';
 import { ApiBody, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 // import { Permission } from '@src/constants/permission';
 import { PageDto } from '../../common/dto/page.dto';
-import { ApiPageOkResponse, Auth, UUIDParam } from '../../decorators';
+import { ApiPageOkResponse, UUIDParam } from '../../decorators';
 import { UserDto } from './dtos/user.dto';
 import { UsersPageOptionsDto } from './dtos/users-page-options.dto';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dtos/create-user.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
+import { ImportUserDto } from './dtos/import-user.dto';
+import { UpdateResult } from 'typeorm';
+import { DeleteUsersDto } from './dtos/delete-users.dto';
 
 @Controller('users')
 @ApiTags('users')
@@ -39,7 +43,7 @@ export class UserController {
     }
 
     @Get()
-    @Auth({ permissions: [] })
+    // @Auth({ permissions: [] })
     @HttpCode(HttpStatus.OK)
     @ApiPageOkResponse({
         description: 'Get list users',
@@ -58,8 +62,18 @@ export class UserController {
         description: 'Create member',
         type: UserDto,
     })
-    createUser(@Body() createUsersDto: CreateUserDto[]): Promise<any> {
-        return this.userService.createUsers(createUsersDto);
+    createUser(@Body() createUserDto: CreateUserDto): Promise<any> {
+        return this.userService.createUser(createUserDto);
+    }
+
+    @Post('/import')
+    @ApiBody({ type: [ImportUserDto] })
+    @ApiPageOkResponse({
+        description: 'Create member',
+        type: UserDto,
+    })
+    importUsers(@Body() importUserDto: ImportUserDto): Promise<any> {
+        return this.userService.importUsers(importUserDto);
     }
 
     @Patch(':userId')
@@ -76,5 +90,22 @@ export class UserController {
             userId,
             updateUserDto,
         });
+    }
+
+    @Delete(':userId')
+    @ApiParam({ name: 'userId', required: true, type: String })
+    @ApiPageOkResponse({
+        description: 'Update member',
+        type: UserDto,
+    })
+    deleteUser(@Param('userId') userId: Uuid): Promise<UpdateResult> {
+        return this.userService.deleteUser({
+            userId,
+        });
+    }
+
+    @Delete()
+    deleteUsers(@Query() deleteUserDto: DeleteUsersDto): Promise<UpdateResult> {
+        return this.userService.deleteUsers(deleteUserDto);
     }
 }

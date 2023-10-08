@@ -1,6 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import type { ApiPropertyOptions } from '@nestjs/swagger';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
     IsBoolean,
@@ -10,6 +10,7 @@ import {
     IsEnum,
     IsInt,
     IsNumber,
+    IsOptional,
     IsPositive,
     IsString,
     IsUrl,
@@ -28,6 +29,7 @@ import {
     ToArray,
     ToBoolean,
     ToLowerCase,
+    ToSortObject,
     ToUpperCase,
 } from './transform.decorators';
 import {
@@ -109,6 +111,12 @@ export function NumberFieldOptional(
     return applyDecorators(
         IsUndefinable(),
         NumberField({ required: false, ...options }),
+    );
+}
+
+export function SortFieldsOptional(): PropertyDecorator {
+    return applyDecorators(
+        ...[ApiPropertyOptional(), IsOptional(), ToSortObject()],
     );
 }
 
